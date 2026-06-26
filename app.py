@@ -45,12 +45,12 @@ else:
     st.markdown("### MAXAM")
 
 st.title(APP_TITLE)
-st.caption("Prototipo 100% local/gratuito para control de suma, corrección de planillas y OCR experimental.")
+st.caption("Asistente de verificación de planillas de carguío, edición por supervisor y validación de suma.")
 st.markdown(
     """
     <div class="brand-box">
         <div class="brand-main">Desarrollado por Luis Ponte</div>
-        <div class="brand-sub">X+ Operational Excellence · Asistente preliminar de verificación de planillas de carguío</div>
+        <div class="brand-sub">X+ Operational Excellence · Verificación preliminar de planillas de carguío</div>
     </div>
     """,
     unsafe_allow_html=True
@@ -66,7 +66,7 @@ with st.sidebar:
     usar_total = st.checkbox("Usar este total como referencia", value=False)
     st.markdown("---")
     st.caption("Desarrollado por Luis Ponte · X+ Operational Excellence")
-    st.info("Modo gratis: no usa API de OpenAI ni consume créditos. El OCR local es experimental y puede fallar con letra manuscrita.")
+    st.info("Herramienta piloto para apoyar la revisión operacional de planillas de carguío.")
 
 def default_table(n=20):
     return pd.DataFrame({
@@ -104,7 +104,7 @@ def compute_total(df):
 
 def compute_status(total, ref_enabled, ref):
     if not ref_enabled:
-        return "🟡 SIN TOTAL DE REFERENCIA", None
+        return "🟡 PENDIENTE DE REFERENCIA", None
     diff = total - ref
     if abs(diff) < 0.0001:
         return "✅ CUADRA", diff
@@ -131,10 +131,10 @@ if image_file:
         st.image(img, use_container_width=True)
 
     with right:
-        st.subheader("Lectura autom?tica")
-        st.warning("Este OCR es gratis/local, pero no es tan bueno como un modelo con visión para letra manuscrita. Úsalo solo como ayuda; el supervisor corrige la tabla.")
+        st.subheader("Lectura automática")
+        st.info("Analiza la imagen y revisa los valores detectados antes de validar la suma.")
 
-        if st.button("Analizar planilla"):
+        if st.button("Analizar planilla", type="primary"):
             raw, err = try_tesseract_ocr(img)
             st.session_state["ocr_raw"] = raw
             if err:
@@ -143,33 +143,32 @@ if image_file:
                 st.session_state["ocr_error"] = ""
 
         if st.session_state.get("ocr_error"):
-            st.error("No se pudo completar la lectura autom?tica. Revisa la imagen o ingresa los datos manualmente.")
-            st.code(st.session_state["ocr_error"])
+            st.warning("No se pudo completar la lectura automática. Revisa la imagen o ingresa los datos manualmente.")
 
         raw_text = st.text_area(
-            "Texto/números detectados por OCR o pegados manualmente",
+            "Valores detectados o ingresados manualmente",
             value=st.session_state.get("ocr_raw", ""),
             height=140
         )
 
         nums = parse_numbers(raw_text)
-        st.caption(f"Números detectados/pegados: {len(nums)}")
+        st.caption(f"Valores detectados: {len(nums)}")
 
         if nums:
             st.write(nums[:80])
 
-        if st.button("Cargar números detectados como KG"):
+        if st.button("Cargar valores detectados como kg"):
             df = default_table(max(20, len(nums)))
             for i, val in enumerate(nums):
                 df.loc[i, "kg"] = val
-                df.loc[i, "observacion"] = "Valor detectado autom?ticamente; revisar."
+                df.loc[i, "observacion"] = "Valor detectado automáticamente; revisar."
             st.session_state["tabla"] = df
-            st.success("Números cargados a la tabla editable. Revisa y elimina los que no sean kg cargados.")
+            st.success("Valores cargados a la tabla editable. Revisa y elimina los que no correspondan a kg cargados.")
 
 st.divider()
 st.subheader("Tabla editable de verificación")
 
-st.caption("Puedes escribir los KG manualmente, pegar números detectados, desmarcar filas tachadas y agregar observaciones.")
+st.caption("Puedes escribir los kg manualmente, pegar números detectados, desmarcar filas tachadas y agregar observaciones.")
 
 tabla_editada = st.data_editor(
     st.session_state["tabla"],
@@ -212,9 +211,9 @@ csv = export.to_csv(index=False).encode("utf-8-sig")
 st.download_button(
     "Descargar CSV para Excel",
     data=csv,
-    file_name="xplus_loadcheck_free_resultado.csv",
+    file_name="xplus_loadcheck_resultado.csv",
     mime="text/csv"
 )
 
 st.markdown("---")
-st.caption("Desarrollado por Luis Ponte · X+ Operational Excellence · MVP local/gratuito")
+st.caption("Desarrollado por Luis Ponte · X+ Operational Excellence")
